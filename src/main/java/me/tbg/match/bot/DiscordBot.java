@@ -17,8 +17,10 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.party.Competitor;
+import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.rotation.MapPool;
 import tc.oc.pgm.rotation.MapPoolManager;
+import tc.oc.pgm.teams.TeamMatchModule;
 
 public class DiscordBot {
 
@@ -180,6 +182,53 @@ public class DiscordBot {
             .setFooter("Map tags: " + event.getMatch().getMap().getTags().toString());
     sendEmbed(matchFinishEmbed);
   }
+
+  /*public void matchPlayersEmbed(MatchFinishEvent event) {
+    EmbedBuilder playersEmbed =
+            new EmbedBuilder()
+                    .setColor(Color.YELLOW)
+                    .setTitle("Stats for match #" + event.getMatch().getId());
+    TeamMatchModule tmm = event.getMatch().getModule(TeamMatchModule.class);
+    if (tmm != null) {
+      tmm.getTeams()
+              .forEach(
+                      team ->
+                              playersEmbed.addField(
+                                      team.getNameLegacy()
+                                              + ": "
+                                              + team.getPlayers().size()
+                                              + "/"
+                                              + team.getMaxPlayers(),
+                                      team.getPlayers().isEmpty()
+                                              ? "_No players_"
+                                              : team.getPlayers().stream()
+                                              .map(MatchPlayer::getNameLegacy)
+                                              .collect(Collectors.joining(", "))));
+    } else {
+      playersEmbed.addField(
+              "Players: "
+                      + event.getMatch().getParticipants().size()
+                      + "/"
+                      + event.getMatch().getMaxPlayers(),
+              event.getMatch().getParticipants().stream()
+                      .map(MatchPlayer::getNameLegacy)
+                      .collect(Collectors.joining(", ")));
+    }
+    playersEmbed.addInlineField(
+            "Observers", String.valueOf(event.getMatch().getDefaultParty().getPlayers().size()));
+    playersEmbed.addInlineField(
+            "Staff online",
+            String.valueOf(
+                    event.getMatch().getPlayers().stream()
+                            .filter(
+                                    player ->
+                                            (player.getBukkit().hasPermission(Permissions.STAFF)
+                                                    && !player.isVanished()))
+                            .count()));
+    playersEmbed.addInlineField(
+            "Total online", String.valueOf(event.getMatch().getPlayers().size()));
+    sendEmbed(playersEmbed);
+  }*/
 
   public void reload() {
     if (this.api != null && !config.isEnabled()) {
