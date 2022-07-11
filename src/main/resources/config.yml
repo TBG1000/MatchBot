@@ -1,0 +1,7 @@
+# Discord Stuff
+enabled: true # Enable discord bot?
+token: "" # Discord bot token
+server: "" # ID of discord server
+
+# ID of channel where match embeds will be sent
+match-channel: ""
