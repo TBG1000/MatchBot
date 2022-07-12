@@ -8,7 +8,6 @@
 	<name>MatchBot</name>
 	<description>A minecraft to discord java plugin</description>
 
-
 	<!-- Repository Locations -->
 	<repositories>
 		<repository>
@@ -19,10 +18,6 @@
 			<id>snapshots-repo</id>
 			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
 		</repository>
-		<repository>
-			<id>aikar</id>
-			<url>https://repo.aikar.co/content/groups/aikar/</url>
-		</repository>
 	</repositories>
 
 	<!-- Dependencies -->
@@ -32,11 +27,6 @@
 			<artifactId>sportpaper</artifactId>
 			<version>1.8.8-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>co.aikar</groupId>
-			<artifactId>acf-bukkit</artifactId>
-			<version>0.5.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>tc.oc.pgm</groupId>
@@ -102,10 +92,6 @@
 						</filter>
 					</filters>
 					<relocations>
-						<relocation>
-							<pattern>co.aikar.commands</pattern>
-							<shadedPattern>tc.oc.occ.bolt.lib.acf</shadedPattern>
-						</relocation>
 						<relocation>
 							<pattern>org.apache.logging.log4j</pattern>
 							<shadedPattern>tc.oc.occ.bolt.lib.logger</shadedPattern>

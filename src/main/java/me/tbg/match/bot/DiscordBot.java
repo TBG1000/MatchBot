@@ -8,19 +8,22 @@ import java.util.stream.Collectors;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
+import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.Contributor;
 import tc.oc.pgm.api.map.Gamemode;
+import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.party.Competitor;
-import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.rotation.MapPool;
 import tc.oc.pgm.rotation.MapPoolManager;
-import tc.oc.pgm.teams.TeamMatchModule;
+
+// import tc.oc.pgm.teams.TeamMatchModule;
+// import tc.oc.pgm.api.player.MatchPlayer;
 
 public class DiscordBot {
 
@@ -77,7 +80,14 @@ public class DiscordBot {
                       .getChannelById(config.getMatchChannel())
                       .ifPresent(
                           channel ->
-                              channel.asTextChannel().ifPresent(text -> text.sendMessage(embed))));
+                              channel
+                                  .asTextChannel()
+                                  .ifPresent(
+                                      text ->
+                                          text.sendMessage(embed)
+                                              .thenAccept(
+                                                  message ->
+                                                      message.addReactions("\u2b05", "\u27a1")))));
     }
   }
 
@@ -120,14 +130,14 @@ public class DiscordBot {
 
   public String getMapAuthors(Match match) {
     return match.getMap().getAuthors().stream()
-            .map(Contributor::getNameLegacy)
-            .collect(Collectors.joining(", "));
+        .map(Contributor::getNameLegacy)
+        .collect(Collectors.joining(", "));
   }
 
   public String getMapGamemodes(Match match) {
     return match.getMap().getGamemodes().stream()
-            .map(Gamemode::getId)
-            .collect(Collectors.joining(", "));
+        .map(Gamemode::getId)
+        .collect(Collectors.joining(", "));
   }
 
   public long getOnlineStaffCount(Match match) {
@@ -138,27 +148,31 @@ public class DiscordBot {
   }
 
   public void matchStartEmbed(MatchStartEvent event) {
-    api.updateActivity(ActivityType.PLAYING, event.getMatch().getMap().getName());
+    Match match = event.getMatch();
+    MapInfo map = match.getMap();
+    api.updateActivity(ActivityType.PLAYING, map.getName());
     EmbedBuilder matchStartEmbed =
         new EmbedBuilder()
             .setColor(Color.GREEN)
-            .setTitle("Match #" + event.getMatch().getId() + " has started!")
+            .setTitle("Match #" + match.getId() + " has started!")
             .setDescription("Started at <t:" + Instant.now().getEpochSecond() + ":f>")
-            .addInlineField("Map", event.getMatch().getMap().getName())
-            .addInlineField("Version", event.getMatch().getMap().getVersion().toString())
-            .addInlineField("Gamemodes", getMapGamemodes(event.getMatch()).toUpperCase())
-            .addInlineField("Created by", getMapAuthors(event.getMatch()))
-            .addInlineField("Pools", getMapPools(event.getMatch()))
-            .addField("Objective", event.getMatch().getMap().getDescription())
-            .addInlineField("Players online", String.valueOf(event.getMatch().getPlayers().size()))
-            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(event.getMatch())))
-            .setFooter("Map tags: " + event.getMatch().getMap().getTags().toString());
+            .addInlineField("Map", map.getName())
+            .addInlineField("Version", map.getVersion().toString())
+            .addInlineField("Gamemodes", getMapGamemodes(match).toUpperCase())
+            .addInlineField("Created by", getMapAuthors(match))
+            .addInlineField("Pools", getMapPools(match))
+            .addField("Objective", map.getDescription())
+            .addInlineField("Players online", String.valueOf(match.getPlayers().size()))
+            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(match)))
+            .setFooter("Map tags: " + map.getTags().toString());
     sendEmbed(matchStartEmbed);
   }
 
   public void matchFinishEmbed(MatchFinishEvent event) {
+    Match match = event.getMatch();
+    MapInfo map = match.getMap();
     String winners = "";
-    for (Competitor competitor : event.getMatch().getCompetitors()) {
+    for (Competitor competitor : match.getCompetitors()) {
       if (event.getWinners().contains(competitor)) {
         winners = competitor.getNameLegacy();
       }
@@ -166,20 +180,20 @@ public class DiscordBot {
     EmbedBuilder matchFinishEmbed =
         new EmbedBuilder()
             .setColor(Color.RED)
-            .setTitle("Match #" + event.getMatch().getId() + " has finished!")
+            .setTitle("Match #" + match.getId() + " has finished!")
             .setDescription("Finished at <t:" + Instant.now().getEpochSecond() + ":f>")
             .addInlineField("Winner", winners.isEmpty() ? "_No winner_" : winners)
-            .addInlineField("Time", parseDuration(event.getMatch().getDuration()))
+            .addInlineField("Time", parseDuration(match.getDuration()))
             .addInlineField("\u200E", "\u200E")
-            .addInlineField("Map", event.getMatch().getMap().getName())
-            .addInlineField("Version", event.getMatch().getMap().getVersion().toString())
-            .addInlineField("Gamemodes", getMapGamemodes(event.getMatch()).toUpperCase())
-            .addInlineField("Created by", getMapAuthors(event.getMatch()))
-            .addInlineField("Pools", getMapPools(event.getMatch()))
-            .addField("Objective", event.getMatch().getMap().getDescription())
-            .addInlineField("Players online", String.valueOf(event.getMatch().getPlayers().size()))
-            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(event.getMatch())))
-            .setFooter("Map tags: " + event.getMatch().getMap().getTags().toString());
+            .addInlineField("Map", map.getName())
+            .addInlineField("Version", map.getVersion().toString())
+            .addInlineField("Gamemodes", getMapGamemodes(match).toUpperCase())
+            .addInlineField("Created by", getMapAuthors(match))
+            .addInlineField("Pools", getMapPools(match))
+            .addField("Objective", map.getDescription())
+            .addInlineField("Players online", String.valueOf(match.getPlayers().size()))
+            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(match)))
+            .setFooter("Map tags: " + map.getTags().toString());
     sendEmbed(matchFinishEmbed);
   }
 
