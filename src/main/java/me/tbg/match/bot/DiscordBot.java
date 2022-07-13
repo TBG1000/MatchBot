@@ -229,30 +229,32 @@ public class DiscordBot {
     Collection<Competitor> teams = event.getMatch().getCompetitors();
     StatsMatchModule statsModule = event.getMatch().getModule(StatsMatchModule.class);
 
-    EmbedBuilder playersEmbed =
+    EmbedBuilder teamStatsEmbed =
         new EmbedBuilder()
             .setColor(Color.YELLOW)
-            .setTitle("Match #" + event.getMatch().getId() + "team stats");
+            .setTitle("Match #" + event.getMatch().getId() + " team stats");
+
     if (tmm != null) {
       for (Competitor team : teams) {
-        TeamStats teamStats = new TeamStats(team, statsModule);
-        playersEmbed.addField(
+        teamStatsEmbed.addField(
             team.getNameLegacy() + ": " + team.getPlayers().size(),
             team.getPlayers().isEmpty()
                 ? "_No players_"
                 : team.getPlayers().stream()
                     .map(MatchPlayer::getNameLegacy)
                     .collect(Collectors.joining(", ")));
-        playersEmbed.addInlineField("Kills", String.valueOf(teamStats.getTeamKills()));
-        playersEmbed.addInlineField("Deaths", String.valueOf(teamStats.getTeamDeaths()));
-        playersEmbed.addInlineField("K/D", String.valueOf(teamStats.getTeamKD()));
-        playersEmbed.addInlineField("Damage dealt", String.valueOf(teamStats.getDamageDone()));
-        playersEmbed.addInlineField("Damage received", String.valueOf(teamStats.getDamageTaken()));
-        playersEmbed.addInlineField(
-            "Bow hits", teamStats.getShotsHit() + "/" + teamStats.getShotsTaken());
+        TeamStats teamStats = new TeamStats(team, statsModule);
+        teamStatsEmbed.addInlineField("Kills", ":dagger: " + teamStats.getTeamKills());
+        teamStatsEmbed.addInlineField("Deaths", ":skull: " + teamStats.getTeamDeaths());
+        teamStatsEmbed.addInlineField("K/D", ":bar_chart: " + teamStats.getTeamKD());
+        teamStatsEmbed.addInlineField("DMG dealt", ":crossed_swords: " + teamStats.getDamageDone() + "\n:bow_and_arrow: " + teamStats.getBowDamage());
+        teamStatsEmbed.addInlineField(
+            "DMG received", ":crossed_swords: " + teamStats.getDamageTaken() + "\n:bow_and_arrow: " + teamStats.getBowDamageTaken());
+        teamStatsEmbed.addInlineField(
+            "Bow hits", ":dart: " + teamStats.getShotsHit() + "/" + teamStats.getShotsTaken() + "\n:bar_chart: " + teamStats.getTeamBowAcc() + "%");
       }
     } else {
-      playersEmbed.addField(
+      teamStatsEmbed.addField(
           "Players: "
               + event.getMatch().getParticipants().size()
               + "/"
@@ -261,6 +263,7 @@ public class DiscordBot {
               .map(MatchPlayer::getNameLegacy)
               .collect(Collectors.joining(", ")));
     }
+    sendEmbed(teamStatsEmbed);
   }
 
   public void reload() {
