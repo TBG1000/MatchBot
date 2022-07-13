@@ -8,10 +8,8 @@ public class BotConfig {
 
   private String token;
   private String serverId;
-
-  private String serverName;
-
   private String matchChannel;
+  private String mapImagesURL;
 
   public BotConfig(Configuration config) {
     reload(config);
@@ -22,6 +20,7 @@ public class BotConfig {
     this.token = config.getString("token");
     this.serverId = config.getString("server");
     this.matchChannel = config.getString("match-channel");
+    this.mapImagesURL = config.getString("map-images-url");
   }
 
   public boolean isEnabled() {
@@ -38,5 +37,9 @@ public class BotConfig {
 
   public String getMatchChannel() {
     return matchChannel;
+  }
+
+  public String getMapImagesURL() {
+    return mapImagesURL;
   }
 }

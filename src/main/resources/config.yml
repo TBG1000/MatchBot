@@ -5,3 +5,6 @@ server: "" # ID of discord server
 
 # ID of channel where match embeds will be sent
 match-channel: ""
+
+# URL where map images are stored
+map-images-url: ""

@@ -3,13 +3,14 @@ package me.tbg.match.bot;
 import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
-import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.util.logging.ExceptionLogger;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.Contributor;
@@ -19,10 +20,13 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.party.Competitor;
+import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.rotation.MapPool;
 import tc.oc.pgm.rotation.MapPoolManager;
+import tc.oc.pgm.stats.StatsMatchModule;
+import tc.oc.pgm.stats.TeamStats;
+import tc.oc.pgm.teams.TeamMatchModule;
 
-// import tc.oc.pgm.teams.TeamMatchModule;
 // import tc.oc.pgm.api.player.MatchPlayer;
 
 public class DiscordBot {
@@ -85,9 +89,7 @@ public class DiscordBot {
                                   .ifPresent(
                                       text ->
                                           text.sendMessage(embed)
-                                              .thenAccept(
-                                                  message ->
-                                                      message.addReactions("\u2b05", "\u27a1")))));
+                                              .exceptionally(ExceptionLogger.get()))));
     }
   }
 
@@ -140,6 +142,13 @@ public class DiscordBot {
         .collect(Collectors.joining(", "));
   }
 
+  public String getMapImageUrl(MapInfo map) {
+    String repo = config.getMapImagesURL();
+    String mapName = map.getName().replace(":", "").replace(" ", "%20");
+    String png = "/map.png";
+    return repo + mapName + png;
+  }
+
   public long getOnlineStaffCount(Match match) {
     return match.getPlayers().stream()
         .filter(
@@ -155,15 +164,24 @@ public class DiscordBot {
         new EmbedBuilder()
             .setColor(Color.GREEN)
             .setTitle("Match #" + match.getId() + " has started!")
-            .setDescription("Started at <t:" + Instant.now().getEpochSecond() + ":f>")
+            .setThumbnail(getMapImageUrl(map))
+            .setDescription(
+                "Started at <t:"
+                    + Instant.now().getEpochSecond()
+                    + ":f> with "
+                    + match.getPlayers().size()
+                    + (match.getPlayers().size() == 1 ? " player" : " players")
+                    + " online.")
             .addInlineField("Map", map.getName())
             .addInlineField("Version", map.getVersion().toString())
             .addInlineField("Gamemodes", getMapGamemodes(match).toUpperCase())
             .addInlineField("Created by", getMapAuthors(match))
             .addInlineField("Pools", getMapPools(match))
             .addField("Objective", map.getDescription())
-            .addInlineField("Players online", String.valueOf(match.getPlayers().size()))
-            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(match)))
+            .addInlineField("Participants", String.valueOf(match.getPlayers().size()))
+            .addInlineField(
+                "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+            .addInlineField("Staff", String.valueOf(getOnlineStaffCount(match)))
             .setFooter("Map tags: " + map.getTags().toString());
     sendEmbed(matchStartEmbed);
   }
@@ -181,7 +199,14 @@ public class DiscordBot {
         new EmbedBuilder()
             .setColor(Color.RED)
             .setTitle("Match #" + match.getId() + " has finished!")
-            .setDescription("Finished at <t:" + Instant.now().getEpochSecond() + ":f>")
+            .setThumbnail(getMapImageUrl(map))
+            .setDescription(
+                "Finished at <t:"
+                    + Instant.now().getEpochSecond()
+                    + ":f> with "
+                    + match.getPlayers().size()
+                    + (match.getPlayers().size() == 1 ? " player" : " players")
+                    + " online.")
             .addInlineField("Winner", winners.isEmpty() ? "_No winner_" : winners)
             .addInlineField("Time", parseDuration(match.getDuration()))
             .addInlineField("\u200E", "\u200E")
@@ -191,58 +216,52 @@ public class DiscordBot {
             .addInlineField("Created by", getMapAuthors(match))
             .addInlineField("Pools", getMapPools(match))
             .addField("Objective", map.getDescription())
-            .addInlineField("Players online", String.valueOf(match.getPlayers().size()))
-            .addInlineField("Staff online", String.valueOf(getOnlineStaffCount(match)))
+            .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
+            .addInlineField(
+                "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+            .addInlineField("Staff", String.valueOf(getOnlineStaffCount(match)))
             .setFooter("Map tags: " + map.getTags().toString());
     sendEmbed(matchFinishEmbed);
   }
 
-  /*public void matchPlayersEmbed(MatchFinishEvent event) {
-    EmbedBuilder playersEmbed =
-            new EmbedBuilder()
-                    .setColor(Color.YELLOW)
-                    .setTitle("Stats for match #" + event.getMatch().getId());
+  public void matchPlayersEmbed(MatchFinishEvent event) {
     TeamMatchModule tmm = event.getMatch().getModule(TeamMatchModule.class);
+    Collection<Competitor> teams = event.getMatch().getCompetitors();
+    StatsMatchModule statsModule = event.getMatch().getModule(StatsMatchModule.class);
+
+    EmbedBuilder playersEmbed =
+        new EmbedBuilder()
+            .setColor(Color.YELLOW)
+            .setTitle("Match #" + event.getMatch().getId() + "team stats");
     if (tmm != null) {
-      tmm.getTeams()
-              .forEach(
-                      team ->
-                              playersEmbed.addField(
-                                      team.getNameLegacy()
-                                              + ": "
-                                              + team.getPlayers().size()
-                                              + "/"
-                                              + team.getMaxPlayers(),
-                                      team.getPlayers().isEmpty()
-                                              ? "_No players_"
-                                              : team.getPlayers().stream()
-                                              .map(MatchPlayer::getNameLegacy)
-                                              .collect(Collectors.joining(", "))));
+      for (Competitor team : teams) {
+        TeamStats teamStats = new TeamStats(team, statsModule);
+        playersEmbed.addField(
+            team.getNameLegacy() + ": " + team.getPlayers().size(),
+            team.getPlayers().isEmpty()
+                ? "_No players_"
+                : team.getPlayers().stream()
+                    .map(MatchPlayer::getNameLegacy)
+                    .collect(Collectors.joining(", ")));
+        playersEmbed.addInlineField("Kills", String.valueOf(teamStats.getTeamKills()));
+        playersEmbed.addInlineField("Deaths", String.valueOf(teamStats.getTeamDeaths()));
+        playersEmbed.addInlineField("K/D", String.valueOf(teamStats.getTeamKD()));
+        playersEmbed.addInlineField("Damage dealt", String.valueOf(teamStats.getDamageDone()));
+        playersEmbed.addInlineField("Damage received", String.valueOf(teamStats.getDamageTaken()));
+        playersEmbed.addInlineField(
+            "Bow hits", teamStats.getShotsHit() + "/" + teamStats.getShotsTaken());
+      }
     } else {
       playersEmbed.addField(
-              "Players: "
-                      + event.getMatch().getParticipants().size()
-                      + "/"
-                      + event.getMatch().getMaxPlayers(),
-              event.getMatch().getParticipants().stream()
-                      .map(MatchPlayer::getNameLegacy)
-                      .collect(Collectors.joining(", ")));
+          "Players: "
+              + event.getMatch().getParticipants().size()
+              + "/"
+              + event.getMatch().getMaxPlayers(),
+          event.getMatch().getParticipants().stream()
+              .map(MatchPlayer::getNameLegacy)
+              .collect(Collectors.joining(", ")));
     }
-    playersEmbed.addInlineField(
-            "Observers", String.valueOf(event.getMatch().getDefaultParty().getPlayers().size()));
-    playersEmbed.addInlineField(
-            "Staff online",
-            String.valueOf(
-                    event.getMatch().getPlayers().stream()
-                            .filter(
-                                    player ->
-                                            (player.getBukkit().hasPermission(Permissions.STAFF)
-                                                    && !player.isVanished()))
-                            .count()));
-    playersEmbed.addInlineField(
-            "Total online", String.valueOf(event.getMatch().getPlayers().size()));
-    sendEmbed(playersEmbed);
-  }*/
+  }
 
   public void reload() {
     if (this.api != null && !config.isEnabled()) {
