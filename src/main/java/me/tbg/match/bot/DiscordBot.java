@@ -1,14 +1,21 @@
 package me.tbg.match.bot;
 
-import java.awt.*;
+import java.awt.Color;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
+import org.javacord.api.entity.channel.Channel;
+import org.javacord.api.entity.channel.TextChannel;
+import org.javacord.api.entity.message.MessageBuilder;
+import org.javacord.api.entity.message.MessageFlag;
+import org.javacord.api.entity.message.component.ActionRow;
+import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.util.logging.ExceptionLogger;
 import tc.oc.pgm.api.PGM;
@@ -79,18 +86,55 @@ public class DiscordBot {
   private void sendEmbed(EmbedBuilder embed) {
     if (api != null) {
       api.getServerById(config.getServerId())
-          .ifPresent(
+          .flatMap(
               server ->
-                  server
-                      .getChannelById(config.getMatchChannel())
-                      .ifPresent(
-                          channel ->
-                              channel
-                                  .asTextChannel()
-                                  .ifPresent(
-                                      text ->
-                                          text.sendMessage(embed)
-                                              .exceptionally(ExceptionLogger.get()))));
+                  server.getChannelById(config.getMatchChannel()).flatMap(Channel::asTextChannel))
+          .ifPresent(text -> text.sendMessage(embed).exceptionally(ExceptionLogger.get()));
+    }
+  }
+
+  public void getMatchFinishEmbeds(MatchFinishEvent event) {
+    EmbedBuilder matchInfo = matchFinishEmbed(event);
+    EmbedBuilder teamStats = teamStatsEmbed(event);
+    EmbedBuilder matchStats = matchStatsEmbed(event);
+    List<EmbedBuilder> matchEmbeds = new ArrayList<>();
+    matchEmbeds.add(matchInfo);
+    matchEmbeds.add(teamStats);
+    matchEmbeds.add(matchStats);
+    TextChannel textChannel =
+        api.getServerById(config.getServerId())
+            .flatMap(serverById -> serverById.getChannelById(config.getMatchChannel()))
+            .flatMap(Channel::asTextChannel)
+            .orElse(null);
+    MessageBuilder embeds = new MessageBuilder();
+    embeds.setEmbed(matchEmbeds.get(0));
+    embeds.addComponents(
+        ActionRow.of(Button.primary("team", "Team Stats"), Button.primary("match", "Match Stats")));
+    if (textChannel != null) {
+      embeds
+          .send(textChannel)
+          .thenAccept(
+              message ->
+                  message.addButtonClickListener(
+                      buttonClickEvent -> {
+                        if (buttonClickEvent.getButtonInteractionWithCustomId("team").isPresent()) {
+                          buttonClickEvent
+                              .getInteraction()
+                              .createImmediateResponder()
+                              .setFlags(MessageFlag.EPHEMERAL)
+                              .addEmbed(matchEmbeds.get(1))
+                              .respond();
+                        } else if (buttonClickEvent
+                            .getButtonInteractionWithCustomId("match")
+                            .isPresent()) {
+                          buttonClickEvent
+                              .getInteraction()
+                              .createImmediateResponder()
+                              .setFlags(MessageFlag.EPHEMERAL)
+                              .addEmbed(matchEmbeds.get(2))
+                              .respond();
+                        }
+                      }));
     }
   }
 
@@ -117,6 +161,9 @@ public class DiscordBot {
   }
 
   public String getMapPools(Match match) {
+    // Extracted from
+    // https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/command/MapCommand.java
+    // Line #253
     if (PGM.get().getMapOrder() instanceof MapPoolManager) {
       String mapPools =
           ((MapPoolManager) PGM.get().getMapOrder())
@@ -151,6 +198,9 @@ public class DiscordBot {
   }
 
   public long getOnlineStaffCount(Match match) {
+    // Adapted from
+    // https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/command/MapCommand.java
+    // Line 88
     return match.getPlayers().stream()
         .filter(
             player -> (player.getBukkit().hasPermission(Permissions.STAFF) && !player.isVanished()))
@@ -187,7 +237,7 @@ public class DiscordBot {
     sendEmbed(matchStartEmbed);
   }
 
-  public void matchFinishEmbed(MatchFinishEvent event) {
+  public EmbedBuilder matchFinishEmbed(MatchFinishEvent event) {
     Match match = event.getMatch();
     MapInfo map = match.getMap();
     String winners = "";
@@ -196,55 +246,53 @@ public class DiscordBot {
         winners = competitor.getNameLegacy();
       }
     }
-    EmbedBuilder matchFinishEmbed =
-        new EmbedBuilder()
-            .setColor(Color.RED)
-            .setTitle("Match #" + match.getId() + " has finished!")
-            .setThumbnail(getMapImageUrl(map))
-            .setDescription(
-                "Finished at <t:"
-                    + Instant.now().getEpochSecond()
-                    + ":f> with "
-                    + match.getPlayers().size()
-                    + (match.getPlayers().size() == 1 ? " player" : " players")
-                    + " online.")
-            .addInlineField("Winner", winners.isEmpty() ? "_No winner_" : winners)
-            .addInlineField("Time", parseDuration(match.getDuration()))
-            .addInlineField("\u200E", "\u200E")
-            .addInlineField("Map", map.getName())
-            .addInlineField("Version", map.getVersion().toString())
-            .addInlineField("Gamemodes", getMapGamemodes(match).toUpperCase())
-            .addInlineField("Created by", getMapAuthors(match))
-            .addInlineField("Pools", getMapPools(match))
-            .addField("Objective", map.getDescription())
-            .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
-            .addInlineField(
-                "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
-            .addInlineField("Staff", String.valueOf(getOnlineStaffCount(match)))
-            .setFooter("Map tags: " + map.getTags().toString());
-    sendEmbed(matchFinishEmbed);
+    return new EmbedBuilder()
+        .setColor(Color.RED)
+        .setTitle("Match #" + match.getId() + " has finished!")
+        .setThumbnail(getMapImageUrl(map))
+        .setDescription(
+            "Finished at <t:"
+                + Instant.now().getEpochSecond()
+                + ":f> with **"
+                + match.getPlayers().size()
+                + (match.getPlayers().size() == 1 ? " player" : " players")
+                + "** online.")
+        .addInlineField("Winner", winners.isEmpty() ? "_No winner_" : winners)
+        .addInlineField("Time", parseDuration(match.getDuration()))
+        .addInlineField("\u200E", "\u200E")
+        .addInlineField("Map", map.getName())
+        .addInlineField("Version", map.getVersion().toString())
+        .addInlineField("Gamemodes", getMapGamemodes(match).toUpperCase())
+        .addInlineField("Created by", getMapAuthors(match))
+        .addInlineField("Pools", getMapPools(match))
+        .addField("Objective", map.getDescription())
+        .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
+        .addInlineField(
+            "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+        .addInlineField("Staff", String.valueOf(getOnlineStaffCount(match)))
+        .setFooter("Map tags: " + map.getTags().toString());
   }
 
-  public void teamStatsEmbed(MatchFinishEvent event) {
+  public EmbedBuilder teamStatsEmbed(MatchFinishEvent event) {
     TeamMatchModule tmm = event.getMatch().getModule(TeamMatchModule.class);
     Collection<Competitor> teams = event.getMatch().getCompetitors();
     StatsMatchModule smm = event.getMatch().getModule(StatsMatchModule.class);
 
     EmbedBuilder teamStatsEmbed =
         new EmbedBuilder()
-            .setColor(Color.YELLOW)
-            .setTitle("Match #" + event.getMatch().getId() + " team stats")
+            .setColor(Color.CYAN)
+            .setTitle("Match #" + event.getMatch().getId() + " Team Stats")
             .setDescription(
                 "Finished at <t:"
                     + Instant.now().getEpochSecond()
-                    + ":f> with "
+                    + ":f> with **"
                     + event.getMatch().getPlayers().size()
                     + (event.getMatch().getPlayers().size() == 1 ? " player" : " players")
-                    + " online on "
+                    + "** online on **"
                     + event.getMatch().getMap().getName()
                     + " (v"
                     + event.getMatch().getMap().getVersion()
-                    + ")");
+                    + ")**");
 
     if (tmm != null) {
       for (Competitor team : teams) {
@@ -257,16 +305,16 @@ public class DiscordBot {
                     .collect(Collectors.joining(", ")));
         TeamStats teamStats = new TeamStats(team, smm);
         teamStatsEmbed.addInlineField("Kills", ":dagger: " + teamStats.getTeamKills());
-        teamStatsEmbed.addInlineField("Deaths", ":skull: " + teamStats.getTeamDeaths());
+        teamStatsEmbed.addInlineField("Deaths", ":coffin: " + teamStats.getTeamDeaths());
         teamStatsEmbed.addInlineField("K/D", ":bar_chart: " + teamStats.getTeamKD());
         teamStatsEmbed.addInlineField(
-            "DMG dealt",
+            "DMG Dealt",
             ":crossed_swords: "
                 + teamStats.getDamageDone()
                 + "\n:bow_and_arrow: "
                 + teamStats.getBowDamage());
         teamStatsEmbed.addInlineField(
-            "DMG received",
+            "DMG Received",
             ":crossed_swords: "
                 + teamStats.getDamageTaken()
                 + "\n:bow_and_arrow: "
@@ -291,76 +339,72 @@ public class DiscordBot {
               .map(MatchPlayer::getNameLegacy)
               .collect(Collectors.joining(", ")));
     }
-    sendEmbed(teamStatsEmbed);
+    return teamStatsEmbed;
   }
 
-  public Map.Entry<UUID, Integer> sortStats(Map<UUID, Integer> map) {
+  public Map.Entry<Map<UUID, String>, Integer> sortStats(Map<Map<UUID, String>, Integer> map) {
     return map.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).orElse(null);
   }
 
-  public Map.Entry<UUID, Double> sortStatsDouble(Map<UUID, Double> map) {
+  public String getPlayerName(Map.Entry<Map<UUID, String>, ?> map) {
+    return map.getKey().entrySet().stream().map(Map.Entry::getValue).collect(Collectors.joining());
+  }
+
+  public Map.Entry<Map<UUID, String>, Double> sortStatsDouble(Map<Map<UUID, String>, Double> map) {
     return map.entrySet().stream()
         .max(Comparator.comparingDouble(Map.Entry::getValue))
         .orElse(null);
   }
 
-  public void matchStatsEmbed(MatchFinishEvent event) {
+  public EmbedBuilder matchStatsEmbed(MatchFinishEvent event) {
     StatsMatchModule smm = event.getMatch().getModule(StatsMatchModule.class);
-
-    Map<UUID, Integer> allKills = new HashMap<>();
-    Map<UUID, Integer> allStreaks = new HashMap<>();
-    Map<UUID, Integer> allDeaths = new HashMap<>();
-    Map<UUID, Integer> allBowshots = new HashMap<>();
-    Map<UUID, Double> allDamage = new HashMap<>();
+    Map<UUID, String> matchPlayer = new HashMap<>();
+    Map<Map<UUID, String>, Integer> allKills = new HashMap<>();
+    Map<Map<UUID, String>, Integer> allStreaks = new HashMap<>();
+    Map<Map<UUID, String>, Integer> allDeaths = new HashMap<>();
+    Map<Map<UUID, String>, Integer> allShots = new HashMap<>();
+    Map<Map<UUID, String>, Double> allDamage = new HashMap<>();
 
     for (MatchPlayer player : event.getMatch().getPlayers()) {
       if (smm != null) {
-        PlayerStats playerStats = smm.getPlayerStat(player.getId());
         UUID playerUUID = player.getId();
-        allKills.put(playerUUID, playerStats.getKills());
-        allStreaks.put(playerUUID, playerStats.getMaxKillstreak());
-        allDeaths.put(playerUUID, playerStats.getDeaths());
-        allBowshots.put(playerUUID, playerStats.getLongestBowKill());
-        allDamage.put(playerUUID, playerStats.getDamageDone());
+        String playerName = player.getNameLegacy();
+        PlayerStats playerStats = smm.getPlayerStat(player.getId());
+        matchPlayer.put(playerUUID, playerName);
+        allKills.put(matchPlayer, playerStats.getKills());
+        allStreaks.put(matchPlayer, playerStats.getMaxKillstreak());
+        allDeaths.put(matchPlayer, playerStats.getDeaths());
+        allShots.put(matchPlayer, playerStats.getLongestBowKill());
+        allDamage.put(matchPlayer, playerStats.getDamageDone());
       }
     }
 
-    Map.Entry<UUID, Integer> highestKills = sortStats(allKills);
-    Map.Entry<UUID, Integer> highestKillstreak = sortStats(allStreaks);
-    Map.Entry<UUID, Integer> highestDeaths = sortStats(allDeaths);
-    Map.Entry<UUID, Integer> longestShot = sortStats(allBowshots);
-    Map.Entry<UUID, Double> highestDamage = sortStatsDouble(allDamage);
+    Map.Entry<Map<UUID, String>, Integer> highestKills = sortStats(allKills);
+    Map.Entry<Map<UUID, String>, Integer> highestStreak = sortStats(allStreaks);
+    Map.Entry<Map<UUID, String>, Integer> mostDeaths = sortStats(allDeaths);
+    Map.Entry<Map<UUID, String>, Integer> longestShot = sortStats(allShots);
+    Map.Entry<Map<UUID, String>, Double> highestDamage = sortStatsDouble(allDamage);
 
-    String winners = "";
-    for (Competitor competitor : event.getMatch().getCompetitors()) {
-      if (event.getWinners().contains(competitor)) {
-        winners = competitor.getNameLegacy();
-      }
-    }
-    EmbedBuilder matchStatsEmbed =
-        new EmbedBuilder()
-            .setTitle("Match #" + event.getMatch().getId() + " stats")
-            .setDescription(
-                "Match ended at <t:"
-                    + Instant.now().getEpochSecond()
-                    + ":f> with "
-                    + event.getMatch().getPlayers().size()
-                    + (event.getMatch().getPlayers().size() == 1 ? " player" : " players")
-                    + " online.\nPlayed on "
-                    + event.getMatch().getMap().getName()
-                    + " (v"
-                    + event.getMatch().getMap().getVersion()
-                    + ")")
-            .addField("Kills", highestKills.getValue() + " by " + highestKills.getKey())
-            .addField("Deaths", highestDeaths.getValue() + " by " + highestDeaths.getKey())
-            .addField(
-                "Killstreak", highestKillstreak.getValue() + " by " + highestKillstreak.getKey())
-            .addField("Longest shot", longestShot.getValue() + " blocks by " + longestShot.getKey())
-            .addField("Damage", highestDamage.getValue() + " by " + highestDamage.getKey())
-            .addInlineField("Winner", winners.isEmpty() ? "_No winner_" : winners)
-            .addInlineField("Time", parseDuration(event.getMatch().getDuration()))
-            .addInlineField("Gamemodes", getMapGamemodes(event.getMatch()).toUpperCase());
-    sendEmbed(matchStatsEmbed);
+    return new EmbedBuilder()
+        .setTitle("Match #" + event.getMatch().getId() + " Stats")
+        .setColor(Color.BLACK)
+        .setDescription(
+            "Match ended at <t:"
+                + Instant.now().getEpochSecond()
+                + ":f> with "
+                + event.getMatch().getPlayers().size()
+                + (event.getMatch().getPlayers().size() == 1 ? " player" : " players")
+                + " online.\nPlayed on "
+                + event.getMatch().getMap().getName()
+                + " (v"
+                + event.getMatch().getMap().getVersion()
+                + ")")
+        .addField("Kills", highestKills.getValue() + " by " + getPlayerName(highestKills))
+        .addField("Deaths", mostDeaths.getValue() + " by " + getPlayerName(mostDeaths))
+        .addField(
+            "Killstreak", highestStreak.getValue() + " by " + getPlayerName(highestStreak))
+        .addField("Longest shot", longestShot.getValue() + " blocks by " + getPlayerName(longestShot))
+        .addField("Damage", highestDamage.getValue() + " by " + getPlayerName(highestDamage));
   }
 
   public void reload() {
