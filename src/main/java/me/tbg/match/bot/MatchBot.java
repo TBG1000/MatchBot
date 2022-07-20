@@ -17,7 +17,8 @@ public class MatchBot extends JavaPlugin {
   }
 
   private void registerListeners() {
-    this.getServer().getPluginManager().registerEvents(new MatchListener(bot), this);
+    this.getServer().getPluginManager().registerEvents(new MatchStartListener(bot), this);
+    this.getServer().getPluginManager().registerEvents(new MatchFinishListener(bot), this);
   }
 
   public void reloadBotConfig() {
