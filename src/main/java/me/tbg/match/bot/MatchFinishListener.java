@@ -207,7 +207,7 @@ public class MatchFinishListener implements Listener {
           teamScores.put(team.getNameLegacy(), (int) scoreModule.getScore(team));
         }
         matchInfo.addInlineField(
-            "Scores :trophy:",
+            "Scores",
             teamScores.entrySet().stream()
                 .map(e -> e.getKey() + ": " + e.getValue() + " points")
                 .collect(Collectors.joining("\n")));
@@ -217,11 +217,11 @@ public class MatchFinishListener implements Listener {
           playerScores.put(player.getNameLegacy(), (int) scoreModule.getScore(player));
         }
         matchInfo.addInlineField(
-            "Podium :trophy:",
+            "Podium",
             playerScores.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(3)
-                .map(e -> ":medal: " + e.getKey() + ": " + e.getValue() + " points")
+                .map(e -> e.getKey() + ": " + e.getValue() + " points")
                 .collect(Collectors.joining("\n")));
       }
     } else {
