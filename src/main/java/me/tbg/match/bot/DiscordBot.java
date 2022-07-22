@@ -1,19 +1,12 @@
 package me.tbg.match.bot;
 
 import java.time.Duration;
-import java.util.*;
-import java.util.List;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.javacord.api.entity.activity.ActivityType;
 import org.javacord.api.entity.channel.Channel;
-import org.javacord.api.entity.channel.TextChannel;
-import org.javacord.api.entity.message.MessageBuilder;
-import org.javacord.api.entity.message.MessageFlag;
-import org.javacord.api.entity.message.component.ActionRow;
-import org.javacord.api.entity.message.component.Button;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.util.logging.ExceptionLogger;
 import tc.oc.pgm.api.PGM;
@@ -22,11 +15,17 @@ import tc.oc.pgm.api.map.Contributor;
 import tc.oc.pgm.api.map.Gamemode;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.MapPool;
 
 // import tc.oc.pgm.api.player.MatchPlayer;
+// import org.javacord.api.entity.channel.TextChannel;
+// import org.javacord.api.entity.message.MessageBuilder;
+// import org.javacord.api.entity.message.MessageFlag;
+// import org.javacord.api.entity.message.component.ActionRow;
+// import org.javacord.api.entity.message.component.Button;
+// import java.util.*;
+// import java.util.List;
 
 public class DiscordBot {
 
@@ -74,9 +73,9 @@ public class DiscordBot {
     this.api = null;
   }
 
-  public void sendMatchStartEmbed(EmbedBuilder embed, MatchStartEvent event) {
+  public void sendMatchEmbed(EmbedBuilder embed, Match match) {
     if (api != null) {
-      api.updateActivity(ActivityType.PLAYING, event.getMatch().getMap().getName());
+      api.updateActivity(ActivityType.PLAYING, match.getMap().getName());
       api.getServerById(config.getServerId())
           .flatMap(
               server ->
@@ -85,6 +84,7 @@ public class DiscordBot {
     }
   }
 
+  /*
   public void sendMatchFinishEmbeds(
       EmbedBuilder matchInfo, EmbedBuilder teamStats, EmbedBuilder matchStats) {
     List<EmbedBuilder> matchEmbeds = new ArrayList<>();
@@ -134,6 +134,7 @@ public class DiscordBot {
                       }));
     }
   }
+  */
 
   public String parseDuration(Duration duration) {
     long hours = duration.toHours();
@@ -203,7 +204,7 @@ public class DiscordBot {
             player -> (player.getBukkit().hasPermission(Permissions.STAFF) && !player.isVanished()))
         .count();
   }
-
+  /*
   public Map.Entry<Map<UUID, String>, Integer> sortStats(Map<Map<UUID, String>, Integer> map) {
     return map.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).orElse(null);
   }
@@ -217,7 +218,7 @@ public class DiscordBot {
         .max(Comparator.comparingDouble(Map.Entry::getValue))
         .orElse(null);
   }
-
+  */
   public void reload() {
     if (this.api != null && !config.isEnabled()) {
       disable();

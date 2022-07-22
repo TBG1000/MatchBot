@@ -11,12 +11,15 @@ import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.party.Competitor;
-import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.score.ScoreMatchModule;
-import tc.oc.pgm.stats.PlayerStats;
-import tc.oc.pgm.stats.StatsMatchModule;
-import tc.oc.pgm.stats.TeamStats;
 import tc.oc.pgm.teams.TeamMatchModule;
+
+// import tc.oc.pgm.stats.PlayerStats;
+// import tc.oc.pgm.stats.StatsMatchModule;
+// import tc.oc.pgm.stats.TeamStats;
+// import tc.oc.pgm.api.player.MatchPlayer;
+// import tc.oc.pgm.api.Datastore;
+// import tc.oc.pgm.api.PGM;
 
 public class MatchFinishListener implements Listener {
 
@@ -30,10 +33,11 @@ public class MatchFinishListener implements Listener {
   public void onMatchFinish(MatchFinishEvent event) {
     Match match = event.getMatch();
     MapInfo map = match.getMap();
-    StatsMatchModule statsModule = match.getModule(StatsMatchModule.class);
     ScoreMatchModule scoreModule = match.getModule(ScoreMatchModule.class);
     TeamMatchModule teamModule = match.getModule(TeamMatchModule.class);
     Collection<Competitor> teams = match.getCompetitors();
+    /*
+    StatsMatchModule statsModule = match.getModule(StatsMatchModule.class);
     Map<UUID, String> matchPlayer = new HashMap<>();
 
     Map<Map<UUID, String>, Integer> allKills = new HashMap<>();
@@ -95,7 +99,6 @@ public class MatchFinishListener implements Listener {
         }
         matchStats.addField(
             "Podium :trophy:",
-            // Get the top 3 players and display them
             playerScores.entrySet().stream()
                 .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                 .limit(3)
@@ -103,6 +106,7 @@ public class MatchFinishListener implements Listener {
                 .collect(Collectors.joining("\n")));
       }
     }
+
     matchStats.addField(
         "Kills :dagger:", highestKills.getValue() + " by " + bot.getPlayerName(highestKills));
     matchStats.addField(
@@ -170,6 +174,7 @@ public class MatchFinishListener implements Listener {
     } else {
       teamStats = null;
     }
+    */
 
     String winner = "";
     for (Competitor competitor : match.getCompetitors()) {
@@ -194,28 +199,46 @@ public class MatchFinishListener implements Listener {
                     + (match.getPlayers().size() == 1 ? " player" : " players")
                     + "** online.")
             .addInlineField("Winner", winner.isEmpty() ? "_No winner_" : winner)
-            .addInlineField("Time", bot.parseDuration(match.getDuration()))
-            .addInlineField("\u200E", "\u200E")
-            .addInlineField("Map", map.getName())
-            .addInlineField("Version", map.getVersion().toString())
-            .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
-            .addInlineField("Created by", bot.getMapAuthors(match))
-            .addInlineField("Pools", bot.getMapPools(match))
-            .addField("Objective", map.getDescription())
-            .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
-            .addInlineField(
-                "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
-            .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
-            .setFooter("Map tags: " + map.getTags().toString());
-
-    bot.sendMatchFinishEmbeds(matchInfo, teamStats, matchStats);
+            .addInlineField("Time", bot.parseDuration(match.getDuration()));
+    if (scoreModule != null) {
+      if (teamModule != null) {
+        Map<String, Integer> teamScores = new HashMap<>();
+        for (Competitor team : teams) {
+          teamScores.put(team.getNameLegacy(), (int) scoreModule.getScore(team));
+        }
+        matchInfo.addInlineField(
+            "Scores :trophy:",
+            teamScores.entrySet().stream()
+                .map(e -> e.getKey() + ": " + e.getValue() + " points")
+                .collect(Collectors.joining("\n")));
+      } else {
+        Map<String, Integer> playerScores = new HashMap<>();
+        for (Competitor player : match.getCompetitors()) {
+          playerScores.put(player.getNameLegacy(), (int) scoreModule.getScore(player));
+        }
+        matchInfo.addInlineField(
+            "Podium :trophy:",
+            playerScores.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .limit(3)
+                .map(e -> ":medal: " + e.getKey() + ": " + e.getValue() + " points")
+                .collect(Collectors.joining("\n")));
+      }
+    } else {
+      matchInfo.addInlineField("\u200E", "\u200E");
+    }
+    matchInfo
+        .addInlineField("Map", map.getName())
+        .addInlineField("Version", map.getVersion().toString())
+        .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
+        .addInlineField("Created by", bot.getMapAuthors(match))
+        .addInlineField("Pools", bot.getMapPools(match))
+        .addField("Objective", map.getDescription())
+        .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
+        .addInlineField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+        .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
+        .setFooter("Map tags: " + map.getTags().toString());
+    bot.sendMatchEmbed(matchInfo, match);
+    // bot.sendMatchFinishEmbeds(matchInfo, teamStats, matchStats);
   }
 }
-
-
-  /*@EventHandler(priority = EventPriority.MONITOR)
-  public void onMatchEnd(MatchFinishEvent event) {
-    bot.getOfflinePlayersWithStats(event.getMatch())
-            .forEach(id -> PGM.get().getDatastore().getUsername(id).getNameLegacy());
-    CompletableFuture.runAsync(UsernameResolver::resolveAll);
-  }*/

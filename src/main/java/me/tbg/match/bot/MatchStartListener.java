@@ -2,7 +2,6 @@ package me.tbg.match.bot;
 
 import java.awt.*;
 import java.time.Instant;
-import java.util.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -45,6 +44,6 @@ public class MatchStartListener implements Listener {
                 "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
             .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
             .setFooter("Map tags: " + map.getTags().toString());
-    bot.sendMatchStartEmbed(matchStartEmbed, event);
+    bot.sendMatchEmbed(matchStartEmbed, event.getMatch());
   }
 }
