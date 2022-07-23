@@ -29,10 +29,10 @@ public class MatchStartListener implements Listener {
             .setDescription(
                 "Started at <t:"
                     + Instant.now().getEpochSecond()
-                    + ":f> with "
+                    + ":f> with **"
                     + match.getPlayers().size()
                     + (match.getPlayers().size() == 1 ? " player" : " players")
-                    + " online.")
+                    + "** online.")
             .addInlineField("Map", map.getName())
             .addInlineField("Version", map.getVersion().toString())
             .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
