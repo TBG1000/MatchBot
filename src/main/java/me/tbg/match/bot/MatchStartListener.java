@@ -39,7 +39,7 @@ public class MatchStartListener implements Listener {
             .addInlineField("Created by", bot.getMapAuthors(match))
             .addInlineField("Pools", bot.getMapPools(match))
             .addField("Objective", map.getDescription())
-            .addInlineField("Participants", String.valueOf(match.getPlayers().size()))
+            .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
             .addInlineField(
                 "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
             .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
