@@ -18,15 +18,6 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.MapPool;
 
-// import tc.oc.pgm.api.player.MatchPlayer;
-// import org.javacord.api.entity.channel.TextChannel;
-// import org.javacord.api.entity.message.MessageBuilder;
-// import org.javacord.api.entity.message.MessageFlag;
-// import org.javacord.api.entity.message.component.ActionRow;
-// import org.javacord.api.entity.message.component.Button;
-// import java.util.*;
-// import java.util.List;
-
 public class DiscordBot {
 
   private DiscordApi api;
@@ -83,58 +74,6 @@ public class DiscordBot {
           .ifPresent(text -> text.sendMessage(embed).exceptionally(ExceptionLogger.get()));
     }
   }
-
-  /*
-  public void sendMatchFinishEmbeds(
-      EmbedBuilder matchInfo, EmbedBuilder teamStats, EmbedBuilder matchStats) {
-    List<EmbedBuilder> matchEmbeds = new ArrayList<>();
-    matchEmbeds.add(matchInfo);
-    if (teamStats != null) {
-      matchEmbeds.add(teamStats);
-    }
-    matchEmbeds.add(matchStats);
-    TextChannel textChannel =
-        api.getServerById(config.getServerId())
-            .flatMap(serverById -> serverById.getChannelById(config.getMatchChannel()))
-            .flatMap(Channel::asTextChannel)
-            .orElse(null);
-    MessageBuilder embeds = new MessageBuilder();
-    embeds.setEmbed(matchEmbeds.get(0));
-    if (teamStats != null) {
-      embeds.addComponents(
-          ActionRow.of(
-              Button.primary("team", "Team Stats"), Button.primary("match", "Match Stats")));
-    } else {
-      embeds.addComponents(ActionRow.of(Button.primary("match", "Match Stats")));
-    }
-    if (textChannel != null) {
-      embeds
-          .send(textChannel)
-          .thenAccept(
-              message ->
-                  message.addButtonClickListener(
-                      buttonClickEvent -> {
-                        if (buttonClickEvent.getButtonInteractionWithCustomId("team").isPresent()) {
-                          buttonClickEvent
-                              .getInteraction()
-                              .createImmediateResponder()
-                              .setFlags(MessageFlag.EPHEMERAL)
-                              .addEmbed(matchEmbeds.get(1))
-                              .respond();
-                        } else if (buttonClickEvent
-                            .getButtonInteractionWithCustomId("match")
-                            .isPresent()) {
-                          buttonClickEvent
-                              .getInteraction()
-                              .createImmediateResponder()
-                              .setFlags(MessageFlag.EPHEMERAL)
-                              .addEmbed(matchEmbeds.get(2))
-                              .respond();
-                        }
-                      }));
-    }
-  }
-  */
 
   public String parseDuration(Duration duration) {
     long hours = duration.toHours();
@@ -204,21 +143,7 @@ public class DiscordBot {
             player -> (player.getBukkit().hasPermission(Permissions.STAFF) && !player.isVanished()))
         .count();
   }
-  /*
-  public Map.Entry<Map<UUID, String>, Integer> sortStats(Map<Map<UUID, String>, Integer> map) {
-    return map.entrySet().stream().max(Comparator.comparingInt(Map.Entry::getValue)).orElse(null);
-  }
 
-  public String getPlayerName(Map.Entry<Map<UUID, String>, ?> map) {
-    return map.getKey().entrySet().stream().map(Map.Entry::getValue).collect(Collectors.joining());
-  }
-
-  public Map.Entry<Map<UUID, String>, Double> sortStatsDouble(Map<Map<UUID, String>, Double> map) {
-    return map.entrySet().stream()
-        .max(Comparator.comparingDouble(Map.Entry::getValue))
-        .orElse(null);
-  }
-  */
   public void reload() {
     if (this.api != null && !config.isEnabled()) {
       disable();
