@@ -31,18 +31,21 @@ public class MatchFinishListener implements Listener {
     Collection<Competitor> teams = match.getCompetitors();
 
     String winner = "";
-    for (Competitor competitor : match.getCompetitors()) {
+    Color winnerColor = null;
+    for (Competitor competitor : teams) {
       if (event.getWinners().contains(competitor)) {
         if (event.getWinners().size() == 1) {
           winner = competitor.getNameLegacy();
+          winnerColor = new Color(competitor.getFullColor().asRGB());
         } else {
           winner = "Tie";
+          winnerColor = Color.RED;
         }
       }
     }
     EmbedBuilder matchInfo =
         new EmbedBuilder()
-            .setColor(Color.RED)
+            .setColor(winnerColor)
             .setTitle("Match #" + match.getId() + " has finished!")
             .setThumbnail(bot.getMapImageUrl(map))
             .setDescription(

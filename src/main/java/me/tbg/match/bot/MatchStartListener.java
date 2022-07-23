@@ -23,7 +23,7 @@ public class MatchStartListener implements Listener {
     MapInfo map = match.getMap();
     EmbedBuilder matchStartEmbed =
         new EmbedBuilder()
-            .setColor(Color.GREEN)
+            .setColor(Color.WHITE)
             .setTitle("Match #" + match.getId() + " has started!")
             .setThumbnail(bot.getMapImageUrl(map))
             .setDescription(
