@@ -17,6 +17,7 @@ import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.MapPool;
+import tc.oc.pgm.api.integration.Integration;
 
 public class DiscordBot {
 
@@ -140,7 +141,7 @@ public class DiscordBot {
     // Line 88
     return match.getPlayers().stream()
         .filter(
-            player -> (player.getBukkit().hasPermission(Permissions.STAFF) && !player.isVanished()))
+            player -> (player.getBukkit().hasPermission(Permissions.STAFF) && !Integration.isVanished(player.getBukkit())))
         .count();
   }
 

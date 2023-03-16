@@ -11,8 +11,8 @@
 	<!-- Repository Locations -->
 	<repositories>
 		<repository>
-			<id>ashcon-repo</id>
-			<url>https://repo.ashcon.app/content/repositories/snapshots</url>
+			<id>pgm-repo</id>
+			<url>https://repo.pgm.fyi/snapshots</url>
 		</repository>
 		<repository>
 			<id>snapshots-repo</id>
@@ -31,13 +31,13 @@
 		<dependency>
 			<groupId>tc.oc.pgm</groupId>
 			<artifactId>core</artifactId>
-			<version>0.14-SNAPSHOT</version>
+			<version>0.16-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>tc.oc.pgm</groupId>
 			<artifactId>util</artifactId>
-			<version>0.14-SNAPSHOT</version>
+			<version>0.16-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
