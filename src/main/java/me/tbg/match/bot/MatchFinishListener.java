@@ -1,6 +1,7 @@
 package me.tbg.match.bot;
 
 import java.awt.*;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,70 +29,91 @@ public class MatchFinishListener implements Listener {
     MapInfo map = match.getMap();
     ScoreMatchModule scoreModule = match.getModule(ScoreMatchModule.class);
     TeamMatchModule teamModule = match.getModule(TeamMatchModule.class);
-    Collection<Competitor> teams = match.getCompetitors();
 
-    String winner = "";
-    Color winnerColor = null;
-    for (Competitor competitor : teams) {
-      if (event.getWinners().contains(competitor)) {
-        if (event.getWinners().size() == 1) {
-          winner = competitor.getNameLegacy();
-          winnerColor = new Color(competitor.getFullColor().asRGB());
-        } else {
-          winner = "Tie";
-          winnerColor = Color.RED;
-        }
-      }
+    String winner = getWinner(event, match.getCompetitors());
+    Color winnerColor = getWinnerColor(event, match.getCompetitors());
+
+    EmbedBuilder matchInfo = createMatchInfoEmbed(match, map, winner, winnerColor);
+
+    addScoresToEmbed(matchInfo, match, scoreModule, teamModule);
+
+    addAdditionalInfoToEmbed(matchInfo, match, map);
+
+    try {
+      matchInfo.setThumbnail(bot.getMapImage(map));
+    } catch (IOException e) {
+      System.out.println("Unable to get map image for " + map.getName());
     }
-    EmbedBuilder matchInfo =
-        new EmbedBuilder()
+
+    bot.sendMatchEmbed(matchInfo, match);
+  }
+
+  private String getWinner(MatchFinishEvent event, Collection<Competitor> teams) {
+    if (event.getWinners().size() == 1) {
+      return event.getWinners().iterator().next().getNameLegacy();
+    } else if (event.getWinners().isEmpty()) {
+      return "_No winner_";
+    } else {
+      return "Tie";
+    }
+  }
+
+  private Color getWinnerColor(MatchFinishEvent event, Collection<Competitor> teams) {
+    if (event.getWinners().size() == 1) {
+      return new Color(event.getWinners().iterator().next().getFullColor().asRGB());
+    } else {
+      return Color.RED;
+    }
+  }
+
+  private EmbedBuilder createMatchInfoEmbed(Match match, MapInfo map, String winner, Color winnerColor) {
+    return new EmbedBuilder()
             .setColor(winnerColor)
             .setTitle("Match #" + match.getId() + " has finished!")
-            .setThumbnail(bot.getMapImageUrl(map))
             .setDescription(
-                "Finished at <t:"
-                    + Instant.now().getEpochSecond()
-                    + ":f> with **"
-                    + match.getPlayers().size()
-                    + (match.getPlayers().size() == 1 ? " player" : " players")
-                    + "** online.")
-            .addInlineField("Winner", winner.isEmpty() ? "_No winner_" : winner)
+                    "Finished at <t:" + Instant.now().getEpochSecond() + ":f> with **"
+                            + match.getPlayers().size() + (match.getPlayers().size() == 1 ? " player" : " players") + "** online.")
+            .addInlineField("Winner", winner)
             .addInlineField("Time", bot.parseDuration(match.getDuration()));
+  }
+
+  private void addScoresToEmbed(EmbedBuilder embed, Match match, ScoreMatchModule scoreModule, TeamMatchModule teamModule) {
     if (scoreModule != null) {
       if (teamModule != null) {
-        Map<String, Integer> teamScores = new HashMap<>();
-        for (Competitor team : teams) {
-          teamScores.put(team.getNameLegacy(), (int) scoreModule.getScore(team));
-        }
-        matchInfo.addInlineField(
-            "Scores",
-            teamScores.entrySet().stream()
-                .map(e -> e.getKey() + ": " + e.getValue() + " points")
-                .collect(Collectors.joining("\n")));
+        Map<String, Integer> teamScores = match.getCompetitors().stream()
+                .collect(Collectors.toMap(Competitor::getNameLegacy, team -> (int) scoreModule.getScore(team)));
+        embed.addInlineField("Scores", formatScores(teamScores));
       } else {
-        Map<String, Integer> playerScores = new HashMap<>();
-        for (Competitor player : match.getCompetitors()) {
-          playerScores.put(player.getNameLegacy(), (int) scoreModule.getScore(player));
-        }
-        matchInfo.addInlineField(
-            "Podium",
-            playerScores.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .limit(3)
-                .map(e -> e.getKey() + ": " + e.getValue() + " points")
-                .collect(Collectors.joining("\n")));
+        Map<String, Integer> playerScores = match.getCompetitors().stream()
+                .collect(Collectors.toMap(Competitor::getNameLegacy, player -> (int) scoreModule.getScore(player)));
+        embed.addInlineField("Podium", formatPodium(playerScores));
       }
     } else {
-      matchInfo.addInlineField("\u200E", "\u200E");
+      embed.addInlineField("\u200E", "\u200E");
     }
-    matchInfo
-        .addInlineField("Map", map.getName())
-        .addInlineField("Version", map.getVersion().toString())
-        .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
-        .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
-        .addInlineField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
-        .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
-        .setFooter("Map tags: " + map.getTags().toString());
-    bot.sendMatchEmbed(matchInfo, match);
+  }
+
+  private String formatScores(Map<String, Integer> scores) {
+    return scores.entrySet().stream()
+            .map(e -> e.getKey() + ": " + e.getValue() + " points")
+            .collect(Collectors.joining("\n"));
+  }
+
+  private String formatPodium(Map<String, Integer> scores) {
+    return scores.entrySet().stream()
+            .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+            .limit(3)
+            .map(e -> e.getKey() + ": " + e.getValue() + " points")
+            .collect(Collectors.joining("\n"));
+  }
+
+  private void addAdditionalInfoToEmbed(EmbedBuilder embed, Match match, MapInfo map) {
+    embed.addInlineField("Map", map.getName())
+            .addInlineField("Version", map.getVersion().toString())
+            .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
+            .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
+            .addInlineField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+            .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
+            .setFooter("Map tags: " + map.getTags().toString());
   }
 }

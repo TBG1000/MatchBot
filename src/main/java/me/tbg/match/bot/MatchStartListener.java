@@ -1,6 +1,7 @@
 package me.tbg.match.bot;
 
 import java.awt.*;
+import java.io.IOException;
 import java.time.Instant;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -21,18 +22,22 @@ public class MatchStartListener implements Listener {
   public void onMatchStart(MatchStartEvent event) {
     Match match = event.getMatch();
     MapInfo map = match.getMap();
-    EmbedBuilder matchStartEmbed =
-        new EmbedBuilder()
+    EmbedBuilder matchStartEmbed = createMatchStartEmbed(match, map);
+
+    try {
+      matchStartEmbed.setThumbnail(bot.getMapImage(map));
+    } catch (IOException e) {
+      System.out.println("Unable to get map image for " + map.getName());
+    }
+
+    bot.sendMatchEmbed(matchStartEmbed, match);
+  }
+
+  private EmbedBuilder createMatchStartEmbed(Match match, MapInfo map) {
+    return new EmbedBuilder()
             .setColor(Color.WHITE)
             .setTitle("Match #" + match.getId() + " has started!")
-            .setThumbnail(bot.getMapImageUrl(map))
-            .setDescription(
-                "Started at <t:"
-                    + Instant.now().getEpochSecond()
-                    + ":f> with **"
-                    + match.getPlayers().size()
-                    + (match.getPlayers().size() == 1 ? " player" : " players")
-                    + "** online.")
+            .setDescription(bot.getMatchDescription(match))
             .addInlineField("Map", map.getName())
             .addInlineField("Version", map.getVersion().toString())
             .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
@@ -40,10 +45,8 @@ public class MatchStartListener implements Listener {
             .addInlineField("Pools", bot.getMapPools(match))
             .addField("Objective", map.getDescription())
             .addInlineField("Participants", String.valueOf(match.getParticipants().size()))
-            .addInlineField(
-                "Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
+            .addInlineField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()))
             .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
             .setFooter("Map tags: " + map.getTags().toString());
-    bot.sendMatchEmbed(matchStartEmbed, event.getMatch());
   }
 }

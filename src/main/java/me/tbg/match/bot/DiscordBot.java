@@ -1,6 +1,11 @@
 package me.tbg.match.bot;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import org.javacord.api.DiscordApi;
@@ -18,6 +23,8 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.MapPool;
 import tc.oc.pgm.api.integration.Integration;
+
+import javax.imageio.ImageIO;
 
 public class DiscordBot {
 
@@ -78,30 +85,30 @@ public class DiscordBot {
 
   public String parseDuration(Duration duration) {
     long hours = duration.toHours();
-    long minutes = duration.toMinutes() - (hours * 60);
-    long seconds = duration.getSeconds() - (hours * 60 * 60) - (minutes * 60);
+    long minutes = duration.toMinutes();
+    long seconds = duration.getSeconds();
+
+    StringBuilder result = new StringBuilder();
+
     if (hours > 0) {
-      return hours
-          + (hours == 1 ? " hour " : " hours ")
-          + minutes
-          + (minutes == 1 ? " minute " : " minutes ")
-          + seconds
-          + (seconds == 1 ? " second" : " seconds");
-    } else if (minutes > 0) {
-      return minutes
-          + (minutes == 1 ? " minute " : " minutes ")
-          + seconds
-          + (seconds == 1 ? " second" : " seconds");
-    } else if (seconds > 0) {
-      return seconds + (seconds == 1 ? " second" : " seconds");
+      result.append(hours)
+              .append(hours == 1 ? " hour " : " hours ");
     }
-    return "_Unavailable_";
+    if (minutes > 0) {
+      result.append(minutes)
+              .append(minutes == 1 ? " minute " : " minutes ");
+    }
+    if (seconds > 0 || result.length() == 0) {
+      result.append(seconds)
+              .append(seconds == 1 ? " second" : " seconds");
+    }
+
+    return result.length() > 0 ? result.toString().trim() : "_Unavailable_";
   }
 
   public String getMapPools(Match match) {
     // Extracted from
     // https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/command/MapCommand.java
-    // Line #253
     if (PGM.get().getMapOrder() instanceof MapPoolManager) {
       String mapPools =
           ((MapPoolManager) PGM.get().getMapOrder())
@@ -128,11 +135,16 @@ public class DiscordBot {
         .collect(Collectors.joining(", "));
   }
 
-  public String getMapImageUrl(MapInfo map) {
-    String repo = config.getMapImagesURL();
-    String mapName = map.getName().replace(":", "").replace(" ", "%20");
-    String png = "/map.png";
-    return repo + mapName + png;
+  public String getMatchDescription(Match match) {
+    int playerCount = match.getPlayers().size();
+    return "Started at <t:" + Instant.now().getEpochSecond() + ":f> with **"
+            + playerCount + (playerCount == 1 ? " player" : " players") + "** online.";
+  }
+
+  public BufferedImage getMapImage(MapInfo map) throws IOException {
+    Path sourceDir = map.getSource().getAbsoluteDir();
+    File pngFile = new File(sourceDir.toFile(), "map.png");
+    return ImageIO.read(pngFile);
   }
 
   public long getOnlineStaffCount(Match match) {
