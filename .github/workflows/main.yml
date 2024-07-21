@@ -49,7 +49,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: MatchBot-${{ github.sha }}
-          release_name: Release MatchBot-${{ github.sha }}
           draft: false
           prerelease: false
           files: ./MatchBot-1.0.0-SNAPSHOT.jar
