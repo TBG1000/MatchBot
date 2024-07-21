@@ -35,6 +35,8 @@ public class DiscordBot {
     private Logger logger;
 
     private Map<Long, Long> matchMessageMap = new HashMap<>();
+    private Map<Long, Long> matchStartTimestamps = new HashMap<>();
+    private Map<Long, Integer> matchStartPlayers = new HashMap<>();
 
     public DiscordBot(BotConfig config, Logger logger) {
         this.config = config;
@@ -105,6 +107,23 @@ public class DiscordBot {
         }
     }
 
+    public EmbedBuilder setEmbedThumbnail(MapInfo map, EmbedBuilder embed, DiscordBot bot) {
+        try {
+            embed.setThumbnail(bot.getMapImage(map));
+            return embed;
+        } catch (IOException e) {
+            if (!bot.getConfig().getFallbackMapImages().isEmpty()) {
+                String mapName = map.getName().replace(" ", "%20");
+                embed.setThumbnail(bot.getConfig().getFallbackMapImages() + mapName + "/map.png");
+                return embed;
+            } else if (!bot.getConfig().getMapImageNotFound().isEmpty()) {
+                embed.setThumbnail(bot.getConfig().getMapImageNotFound());
+                return embed;
+            }
+        }
+        return embed;
+    }
+
     public String parseDuration(Duration duration) {
         long hours = duration.toHours();
         long minutes = duration.toMinutes();
@@ -170,6 +189,19 @@ public class DiscordBot {
                 .filter(player -> (player.getBukkit().hasPermission(Permissions.STAFF)
                         && !Integration.isVanished(player.getBukkit())))
                 .count();
+    }
+
+    public void storeMatchStartData(long matchId, Long startTimestamp, Integer players) {
+        matchStartTimestamps.put(matchId, startTimestamp);
+        matchStartPlayers.put(matchId, players);
+    }
+
+    public Long getMatchStartTimestamp(long matchId) {
+        return matchStartTimestamps.get(matchId);
+    }
+
+    public Integer getMatchStartPlayers(long matchId) {
+        return matchStartPlayers.get(matchId);
     }
 
     public void reload() {

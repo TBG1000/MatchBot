@@ -1,7 +1,6 @@
 package me.tbg.match.bot;
 
 import java.awt.Color;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
@@ -68,7 +67,11 @@ public class MatchFinishListener implements Listener {
         EmbedBuilder embed = new EmbedBuilder()
                 .setColor(winnerColor)
                 .setTitle("Match #" + match.getId() + " has finished!")
-                .setDescription("Finished at <t:" + Instant.now().getEpochSecond() + ":f> with **"
+                .setDescription("Started at <t:" + bot.getMatchStartTimestamp(Long.parseLong(match.getId()))
+                        + ":f> with **"
+                        + bot.getMatchStartPlayers(Long.parseLong(match.getId()))
+                        + (bot.getMatchStartPlayers(Long.parseLong(match.getId())) == 1 ? " player" : " players")
+                        + "**  and finished at <t:" + Instant.now().getEpochSecond() + ":f> with **"
                         + match.getPlayers().size() + (match.getPlayers().size() == 1 ? " player" : " players")
                         + "** online.")
                 .addInlineField("Winner", winner)
@@ -100,15 +103,7 @@ public class MatchFinishListener implements Listener {
                 .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
                 .setFooter("Map tags: " + map.getTags().toString());
 
-        try {
-            embed.setThumbnail(bot.getMapImage(map));
-        } catch (IOException e) {
-            if (!bot.getConfig().getFallbackMapImages().isEmpty()) {
-                embed.setThumbnail(bot.getConfig().getFallbackMapImages() + map.getName());
-            } else if (!bot.getConfig().getMapImageNotFound().isEmpty()) {
-                embed.setThumbnail(bot.getConfig().getMapImageNotFound());
-            }
-        }
+        bot.setEmbedThumbnail(map, embed, bot);
 
         return embed;
     }

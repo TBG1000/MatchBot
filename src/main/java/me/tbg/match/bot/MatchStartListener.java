@@ -1,7 +1,8 @@
 package me.tbg.match.bot;
 
 import java.awt.Color;
-import java.io.IOException;
+import java.time.Instant;
+
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
@@ -23,17 +24,12 @@ public class MatchStartListener implements Listener {
         MapInfo map = match.getMap();
         EmbedBuilder matchStartEmbed = createMatchStartEmbed(match, map);
 
-        try {
-            matchStartEmbed.setThumbnail(bot.getMapImage(map));
-        } catch (IOException e) {
-            if (!bot.getConfig().getFallbackMapImages().isEmpty()) {
-                matchStartEmbed.setThumbnail(bot.getConfig().getFallbackMapImages() + map.getName());
-            } else if (!bot.getConfig().getMapImageNotFound().isEmpty()) {
-                matchStartEmbed.setThumbnail(bot.getConfig().getMapImageNotFound());
-            }
-        }
-
+        bot.setEmbedThumbnail(map, matchStartEmbed, bot);
         bot.sendMatchEmbed(matchStartEmbed, match);
+        bot.storeMatchStartData(
+                Long.parseLong(match.getId()),
+                Instant.now().getEpochSecond(),
+                match.getPlayers().size());
     }
 
     private EmbedBuilder createMatchStartEmbed(Match match, MapInfo map) {
