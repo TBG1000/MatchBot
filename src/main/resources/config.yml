@@ -6,5 +6,11 @@ server: "" # ID of discord server
 # ID of channel where match embeds will be sent
 match-channel: ""
 
-# URL where map images are stored
-map-images-url: ""
+# Fallback URL for map.png images
+# This will be used in case no map.png is found the map's directory
+# Example: https://raw.githubusercontent.com/TBG1000/MapImages/main/Maps/
+fallback-map-images: ""
+
+# Image URL to display in the embed's thumbnail if no image is found
+# Example: https://raw.githubusercontent.com/TBG1000/MapImages/main/map_image_not_found.png
+map-image-not-found: ""
