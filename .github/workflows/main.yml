@@ -33,7 +33,7 @@ jobs:
       - name: Upload Release Asset
         id: upload-release-asset
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main')
-        uses: actions/upload-release-asset@v4
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
