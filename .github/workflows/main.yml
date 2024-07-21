@@ -48,8 +48,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./MatchBot-1.0.0-SNAPSHOT.jar
-          asset_name: MatchBot-1.0.0-SNAPSHOT.jar
-          asset_content_type: application/java-archive
-          tag: MatchBot-${{ github.sha }}
+          tag_name: MatchBot-${{ github.sha }}
+          release_name: Release MatchBot-${{ github.sha }}
+          draft: false
+          prerelease: false
+          files: ./MatchBot-1.0.0-SNAPSHOT.jar
+          make_latest: true
