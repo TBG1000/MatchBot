@@ -5,7 +5,8 @@ import java.time.Instant;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
+
+import net.dv8tion.jda.api.EmbedBuilder;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
@@ -34,21 +35,16 @@ public class MatchStartListener implements Listener {
 
     private EmbedBuilder createMatchStartEmbed(Match match, MapInfo map) {
         return new EmbedBuilder()
-                .setColor(Color.WHITE)
+                .setColor(Color.WHITE.getRGB())
                 .setTitle("Match #" + match.getId() + " has started!")
                 .setDescription(bot.getMatchDescription(match))
-                .addInlineField("Map", map.getName())
-                .addInlineField("Version", map.getVersion().toString())
-                .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
-                .addInlineField("Created by", bot.getMapAuthors(match))
-                .addInlineField("Pools", bot.getMapPools(match))
-                .addField("Objective", map.getDescription())
-                .addInlineField(
-                        "Participants", String.valueOf(match.getParticipants().size()))
-                .addInlineField(
-                        "Observers",
-                        String.valueOf(match.getDefaultParty().getPlayers().size()))
-                .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
-                .setFooter("Map tags: " + map.getTags().toString());
+                .addField("Map", map.getName(), true)
+                .addField("Version", map.getVersion().toString(), true)
+                .addField("Gamemodes", bot.getMapGamemodes(match).toUpperCase(), true)
+                .addField("Created by", bot.getMapAuthors(match), true)
+                .addField("Pools", bot.getMapPools(match), true)
+                .addField("Objective", map.getDescription(), false)
+                .addField("Participants", String.valueOf(match.getParticipants().size()), true)
+                .addField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()), true);
     }
 }

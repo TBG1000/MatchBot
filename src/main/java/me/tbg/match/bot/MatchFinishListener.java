@@ -5,9 +5,9 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.stream.Collectors;
+import net.dv8tion.jda.api.EmbedBuilder;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
@@ -65,7 +65,7 @@ public class MatchFinishListener implements Listener {
             ScoreMatchModule scoreModule,
             TeamMatchModule teamModule) {
         EmbedBuilder embed = new EmbedBuilder()
-                .setColor(winnerColor)
+                .setColor(winnerColor.getRGB())
                 .setTitle("Match #" + match.getId() + " has finished!")
                 .setDescription("Started at <t:" + bot.getMatchStartTimestamp(Long.parseLong(match.getId()))
                         + ":f> with **"
@@ -74,33 +74,30 @@ public class MatchFinishListener implements Listener {
                         + "**  and finished at <t:" + Instant.now().getEpochSecond() + ":f> with **"
                         + match.getPlayers().size() + (match.getPlayers().size() == 1 ? " player" : " players")
                         + "** online.")
-                .addInlineField("Winner", winner)
-                .addInlineField("Time", bot.parseDuration(match.getDuration()));
+                .addField("Winner", winner, true)
+                .addField("Time", bot.parseDuration(match.getDuration()), true);
 
         if (scoreModule != null) {
             if (teamModule != null) {
                 Map<String, Integer> teamScores = match.getCompetitors().stream()
                         .collect(Collectors.toMap(Competitor::getNameLegacy, team -> (int) scoreModule.getScore(team)));
-                embed.addInlineField("Scores", formatScores(teamScores));
+                embed.addField("Scores", formatScores(teamScores), true);
             } else {
                 Map<String, Integer> playerScores = match.getCompetitors().stream()
                         .collect(Collectors.toMap(
                                 Competitor::getNameLegacy, player -> (int) scoreModule.getScore(player)));
-                embed.addInlineField("Podium", formatPodium(playerScores));
+                embed.addField("Podium", formatPodium(playerScores), true);
             }
         } else {
-            embed.addInlineField("\u200E", "\u200E");
+            embed.addField("\u200E", "\u200E", false);
         }
 
-        embed.addInlineField("Map", map.getName())
-                .addInlineField("Version", map.getVersion().toString())
-                .addInlineField("Gamemodes", bot.getMapGamemodes(match).toUpperCase())
-                .addInlineField(
-                        "Participants", String.valueOf(match.getParticipants().size()))
-                .addInlineField(
-                        "Observers",
-                        String.valueOf(match.getDefaultParty().getPlayers().size()))
-                .addInlineField("Staff", String.valueOf(bot.getOnlineStaffCount(match)))
+        embed.addField("Map", map.getName(), true)
+                .addField("Version", map.getVersion().toString(), true)
+                .addField("Gamemodes", bot.getMapGamemodes(match).toUpperCase(), true)
+                .addField("Participants", String.valueOf(match.getParticipants().size()), true)
+                .addField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()), true)
+                .addField("Staff", String.valueOf(bot.getOnlineStaffCount(match)), true)
                 .setFooter("Map tags: " + map.getTags().toString());
 
         bot.setEmbedThumbnail(map, embed, bot);

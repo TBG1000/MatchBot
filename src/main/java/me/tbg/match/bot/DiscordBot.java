@@ -10,12 +10,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import org.javacord.api.DiscordApi;
-import org.javacord.api.DiscordApiBuilder;
-import org.javacord.api.entity.activity.ActivityType;
-import org.javacord.api.entity.channel.Channel;
-import org.javacord.api.entity.message.embed.EmbedBuilder;
-import org.javacord.api.util.logging.ExceptionLogger;
+import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.TextChannel;
+import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.Contributor;
@@ -30,7 +32,7 @@ import javax.imageio.ImageIO;
 
 public class DiscordBot {
 
-    private DiscordApi api;
+    private JDA api;
     private BotConfig config;
     private Logger logger;
 
@@ -51,59 +53,57 @@ public class DiscordBot {
     public void enable() {
         if (config.isEnabled()) {
             logger.info("Enabling DiscordBot...");
-            new DiscordApiBuilder()
-                    .setToken(config.getToken())
-                    .setWaitForServersOnStartup(false)
-                    .setWaitForUsersOnStartup(false)
-                    .login()
-                    .thenAcceptAsync(api -> {
-                        setAPI(api);
-                        api.setMessageCacheSize(1, 60 * 60);
-                        api.addServerBecomesAvailableListener(
-                                listener -> logger.info(listener.getServer().getName() + " is now available"));
-                        logger.info("Discord Bot (MatchBot) is now active!");
-                    })
-                    .exceptionally(throwable -> {
-                        logger.info("Failed to login to Discord: " + throwable.getMessage());
-                        return null;
-                    });
+            try {
+                this.api = JDABuilder.createDefault(config.getToken())
+                        .enableIntents(GatewayIntent.GUILD_MESSAGES, GatewayIntent.GUILD_MEMBERS)
+                        .setActivity(Activity.playing("Starting up..."))
+                        .build();
+                this.api.awaitReady();
+                logger.info("Discord Bot (MatchBot) is now active!");
+            } catch (Exception e) {
+                logger.info("Failed to login to Discord: " + e.getMessage());
+            }
         }
     }
 
-    private void setAPI(DiscordApi api) {
+    private void setAPI(JDA api) {
         this.api = api;
     }
 
     public void disable() {
         if (this.api != null) {
-            this.api.disconnect();
+            this.api.shutdown();
         }
         this.api = null;
     }
 
     public void sendMatchEmbed(EmbedBuilder embed, Match match) {
         if (api != null) {
-            api.updateActivity(ActivityType.PLAYING, match.getMap().getName());
-            api.getServerById(config.getServerId())
-                    .flatMap(server ->
-                            server.getChannelById(config.getMatchChannel()).flatMap(Channel::asTextChannel))
-                    .ifPresent(textChannel -> textChannel
-                            .sendMessage(embed)
-                            .thenAccept(message -> matchMessageMap.put(Long.valueOf(match.getId()), message.getId()))
-                            .exceptionally(ExceptionLogger.get()));
+            api.getPresence().setActivity(Activity.playing(match.getMap().getName()));
+            Guild guild = api.getGuildById(config.getServerId());
+            if (guild != null) {
+                TextChannel textChannel = guild.getTextChannelById(config.getMatchChannel());
+                if (textChannel != null) {
+                    textChannel.sendMessageEmbeds(embed.build()).queue(message -> {
+                        matchMessageMap.put(Long.valueOf(match.getId()), message.getIdLong());
+                    });
+                }
+            }
         }
     }
 
     public void editMatchEmbed(long matchId, EmbedBuilder newEmbed) {
         if (api != null && matchMessageMap.containsKey(matchId)) {
-            long messageId = matchMessageMap.get(matchId);
-            api.getServerById(config.getServerId())
-                    .flatMap(server ->
-                            server.getChannelById(config.getMatchChannel()).flatMap(Channel::asTextChannel))
-                    .ifPresent(textChannel -> textChannel
-                            .getMessageById(messageId)
-                            .thenAccept(message -> message.edit(newEmbed))
-                            .exceptionally(ExceptionLogger.get()));
+            Guild guild = api.getGuildById(config.getServerId());
+            if (guild != null) {
+                TextChannel textChannel = guild.getTextChannelById(config.getMatchChannel());
+                if (textChannel != null) {
+                    long messageId = matchMessageMap.get(matchId);
+                    textChannel.retrieveMessageById(messageId).queue(message -> {
+                        message.editMessageEmbeds(newEmbed.build()).queue();
+                    });
+                }
+            }
         }
     }
 
