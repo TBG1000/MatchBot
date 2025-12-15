@@ -1,6 +1,7 @@
-name: MatchBot
-main: me.tbg.match.bot.MatchBot
-description: A Minecraft to Discord bot. Display PGM match information in Discord.
+name: ${project.name}
+description: ${project.description}
 version: ${project.version}
+main: me.tbg.match.bot.MatchBot
 author: TBG1000
+website: https://github.com/TBG1000/MatchBot
 depend: [PGM]

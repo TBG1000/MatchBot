@@ -135,8 +135,8 @@ public class DiscordBot {
 
     public String parseDuration(Duration duration) {
         long hours = duration.toHours();
-        long minutes = duration.toMinutes();
-        long seconds = duration.getSeconds();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.getSeconds() % 60;
 
         StringBuilder result = new StringBuilder();
 

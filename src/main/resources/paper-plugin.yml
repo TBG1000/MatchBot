@@ -1,0 +1,14 @@
+name: ${project.name}
+description: ${project.description}
+version: '${project.version}'
+api-version: '1.21.10'
+main: me.tbg.match.bot.MatchBot
+author: TBG1000
+website: https://github.com/TBG1000/MatchBot
+
+dependencies:
+  server:
+    PGM:
+      load: BEFORE
+      required: true
+      join-classpath: true

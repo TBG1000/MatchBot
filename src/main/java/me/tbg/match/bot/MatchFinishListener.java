@@ -25,6 +25,7 @@ public class MatchFinishListener implements Listener {
 
     @EventHandler
     public void onMatchFinish(MatchFinishEvent event) {
+        BotConfig config = bot.getConfig();
         Match match = event.getMatch();
         MapInfo map = match.getMap();
         ScoreMatchModule scoreModule = match.getModule(ScoreMatchModule.class);
@@ -34,7 +35,7 @@ public class MatchFinishListener implements Listener {
         Color winnerColor = getWinnerColor(event);
 
         EmbedBuilder matchFinishEmbed =
-                createMatchFinishEmbed(match, map, winner, winnerColor, scoreModule, teamModule);
+                createMatchFinishEmbed(config, match, map, winner, winnerColor, scoreModule, teamModule);
 
         bot.editMatchEmbed(Long.parseLong(match.getId()), matchFinishEmbed);
     }
@@ -58,6 +59,7 @@ public class MatchFinishListener implements Listener {
     }
 
     private EmbedBuilder createMatchFinishEmbed(
+            BotConfig config,
             Match match,
             MapInfo map,
             String winner,
@@ -98,7 +100,7 @@ public class MatchFinishListener implements Listener {
                 .addField("Participants", String.valueOf(match.getParticipants().size()), true)
                 .addField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()), true)
                 .addField("Staff", String.valueOf(bot.getOnlineStaffCount(match)), true)
-                .setFooter("Map tags: " + map.getTags().toString());
+                .setFooter((!config.getServerName().isEmpty() ? "Server: " + config.getServerName() + " • " : "") + "Map tags: " + map.getTags().toString());
 
         bot.setEmbedThumbnail(map, embed, bot);
 
