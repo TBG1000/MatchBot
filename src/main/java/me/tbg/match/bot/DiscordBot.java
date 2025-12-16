@@ -18,6 +18,7 @@ import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
 import net.dv8tion.jda.api.utils.AttachedFile;
 import net.dv8tion.jda.api.utils.FileUpload;
 import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
@@ -83,23 +84,17 @@ public class DiscordBot {
 
     public void sendMatchEmbed(EmbedBuilder embed, Match match) {
         if (api != null) {
-            api.getPresence().setActivity(Activity.playing(match.getMap().getName()));
+            api.getPresence().setActivity(Activity.playing("Playing " + match.getMap().getName() + " on " + config.getServerName()));
             Guild guild = api.getGuildById(config.getServerId());
             if (guild != null) {
                 TextChannel textChannel = guild.getTextChannelById(config.getMatchChannel());
                 if (textChannel != null) {
                     File imgFile = new File(match.getMap().getSource().getAbsoluteDir().toFile(), "map.png");
-                    if (imgFile.exists()) {
-                        textChannel.sendFiles(FileUpload.fromData(imgFile, "map.png"))
-                                        .setEmbeds(embed.build())
-                                                .queue(message1 -> {
-                                                    matchMessageMap.put(Long.valueOf(match.getId()), message1.getIdLong());
-                                                });
-                    } else {
-                        textChannel.sendMessageEmbeds(embed.build()).queue(messageSent -> {
-                            matchMessageMap.put(Long.valueOf(match.getId()), messageSent.getIdLong());
-                        });
-                    }
+                    MessageCreateAction messageAction = (imgFile.exists()) ? textChannel.sendFiles(FileUpload.fromData(imgFile, "map.png")).setEmbeds(embed.build())
+                            : textChannel.sendMessageEmbeds(embed.build());
+                    messageAction.queue(message -> {
+                        matchMessageMap.put(Long.valueOf(match.getId()), message.getIdLong());
+                    });
                 }
             }
         }
