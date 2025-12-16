@@ -9,20 +9,20 @@ MatchBot will listen to [`MatchStartEvent`](https://github.com/PGMDev/PGM/blob/d
 
 MatchBot is built with [JDA](https://jda.wiki/), an awesome Java library for Discord bots.
 
-This bot runs on a single Minecraft server, and is not designed with proxies, networks, or multiple servers in mind.
+This bot runs best on a single Minecraft server, but can accommodate multiple servers (not proxies).
 
 ## Building
 
 1. First, [clone](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) or download the project's source code.
 2. Optionally, make your desired changes.
-3. Run the code formatter, following Google's [code style.](https://google.github.io/styleguide/javaguide.html)
-```bash
-mvn spotless:apply
-```
+3. Run the code formatter, following [Google's code style](https://google.github.io/styleguide/javaguide.html).
+    ```bash
+    mvn spotless:apply
+    ```
 5. Compile the project.
-```bash
-mvn package
-```
+    ```bash
+    mvn package
+    ```
 
 You'll find the bot's `.jar` file inside the `target` folder of the project's root directory.
 
@@ -31,20 +31,21 @@ You'll find the bot's `.jar` file inside the `target` folder of the project's ro
 MatchBot depends on [PGM](https://github.com/PGMDev/PGM/) directly to work. Make sure your server has it installed.
 
 1. Drop the plugin's `.jar` in your server's `plugins` folder.
-2. Restart the server to automatically generate the bot's required files (`config.yml`, `plugin.yml`).
+2. Restart the server to automatically generate the bot's required files (`config.yml`).
 3. Fill in the blanks of the configuration file (`config.yml`). To do this, you'll need the following:
-    - A token for your Discord bot which you can get at the [Discord Developer Portal](https://discord.com/developers/docs)
+    - A token for your Discord bot which you can get at the [Discord Developer Portal](https://discord.com/developers/docs).
     - The ID of the server in which the bot will be functioning.
     - The ID of the channel in which match embeds will be sent.
+    - `server-name` and `map-image-not-found` fields are optional.
 4. Restart the server once again for the changes to take place. Once your bot goes online, match embeds will be sent to the designated channel as soon as matches start or end.
 
-You may look at a sample of the configuration file [below](https://github.com/TBG1000/MatchBot#config).
-You can also find out how to get server, role or channel IDs [here](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID).
+You may look at a [sample of the configuration file below](https://github.com/TBG1000/MatchBot#config).
+You can also find out how to get [server, role or channel IDs here](https://support.discord.com/hc/en-us/articles/206346498-Where-can-I-find-my-User-Server-Message-ID).
 
 
 ## Sample images
-![Match start sample](https://i.imgur.com/JsbQFDV.png)
-![Match finish sample](https://i.imgur.com/N5bG46T.png)
+<img width="542" height="397" alt="Match start sample" src="https://github.com/user-attachments/assets/3e4eaba7-fc18-4398-ab55-7ad5e5d6aadb" />
+<img width="542" height="459" alt="Match finish sample" src="https://github.com/user-attachments/assets/39574245-db1f-4d38-988e-d8af8e4730df" />
 
 ## Config
     
