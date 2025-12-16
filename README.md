@@ -17,7 +17,7 @@ This bot runs on a single Minecraft server, and is not designed with proxies, ne
 2. Optionally, make your desired changes.
 3. Run the code formatter, following Google's [code style.](https://google.github.io/styleguide/javaguide.html)
 ```bash
-mvn com.coveo:fmt-maven-plugin:format
+mvn spotless:apply
 ```
 5. Compile the project.
 ```bash
