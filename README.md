@@ -1,4 +1,4 @@
-# MatchBot
+# MatchBot (Deprecated - Javacord library)
 A Minecraft to Discord bot, interacting with [PGM](https://github.com/PGMDev/PGM/) Match events to display match information live.
 
 This project's structure is a modified version of [Bolty](https://github.com/applenick/Bolty), developed by [applenick](https://github.com/applenick). Similarly, the project is also directly inspired by the `#match-status` channel located at the [Overcast Community](https://oc.tc) Discord server.
@@ -7,7 +7,7 @@ This project's structure is a modified version of [Bolty](https://github.com/app
 
 MatchBot will listen to [`MatchStartEvent`](https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/api/match/event/MatchStartEvent.java) and [`MatchFinishEvent`](https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/api/match/event/MatchFinishEvent.java) to populate a Discord [embed](https://javacord.org/wiki/basic-tutorials/embeds.html#creating-an-embed) with information about a started or finished match.
 
-MatchBot is built with [Javacord](https://javacord.org/), an awesome Java library for Discord bots.
+MatchBot is built with [Javacord](https://javacord.org/), an awesome Java library for Discord bots. Javacord is no longer supported. Feek free to use JDA on the main branch or port the bot to your preferred library.
 
 This bot runs on a single Minecraft server, and is not designed with proxies, networks, or multiple servers in mind.
 
