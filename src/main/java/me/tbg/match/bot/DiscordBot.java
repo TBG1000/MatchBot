@@ -14,10 +14,15 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.entities.TextChannel;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.requests.restaction.MessageCreateAction;
+import net.dv8tion.jda.api.utils.AttachedFile;
+import net.dv8tion.jda.api.utils.FileUpload;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.Contributor;
@@ -79,12 +84,18 @@ public class DiscordBot {
 
     public void sendMatchEmbed(EmbedBuilder embed, Match match) {
         if (api != null) {
-            api.getPresence().setActivity(Activity.playing(match.getMap().getName()));
+            api.getPresence().setActivity(Activity.playing("Playing " + match.getMap().getName() + " on " + config.getServerName()));
+            if (config.getServerName().isEmpty()) {
+                api.getPresence().setActivity(Activity.playing("Playing " + match.getMap().getName()));
+            }
             Guild guild = api.getGuildById(config.getServerId());
             if (guild != null) {
                 TextChannel textChannel = guild.getTextChannelById(config.getMatchChannel());
                 if (textChannel != null) {
-                    textChannel.sendMessageEmbeds(embed.build()).queue(message -> {
+                    File imgFile = new File(match.getMap().getSource().getAbsoluteDir().toFile(), "map.png");
+                    MessageCreateAction messageAction = (imgFile.exists()) ? textChannel.sendFiles(FileUpload.fromData(imgFile, "map.png")).setEmbeds(embed.build())
+                            : textChannel.sendMessageEmbeds(embed.build());
+                    messageAction.queue(message -> {
                         matchMessageMap.put(Long.valueOf(match.getId()), message.getIdLong());
                     });
                 }
@@ -108,26 +119,22 @@ public class DiscordBot {
     }
 
     public EmbedBuilder setEmbedThumbnail(MapInfo map, EmbedBuilder embed, DiscordBot bot) {
-        try {
-            embed.setThumbnail(bot.getMapImage(map));
-            return embed;
-        } catch (IOException e) {
-            if (!bot.getConfig().getFallbackMapImages().isEmpty()) {
-                String mapName = map.getName().replace(" ", "%20");
-                embed.setThumbnail(bot.getConfig().getFallbackMapImages() + mapName + "/map.png");
-                return embed;
-            } else if (!bot.getConfig().getMapImageNotFound().isEmpty()) {
+        File imgFile = new File(map.getSource().getAbsoluteDir().toFile(), "map.png");
+        if (!imgFile.exists()) {
+            if (!bot.getConfig().getMapImageNotFound().isEmpty()) {
                 embed.setThumbnail(bot.getConfig().getMapImageNotFound());
                 return embed;
             }
+            return embed;
         }
+        embed.setThumbnail("attachment://map.png");
         return embed;
     }
 
     public String parseDuration(Duration duration) {
         long hours = duration.toHours();
-        long minutes = duration.toMinutes();
-        long seconds = duration.getSeconds();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.getSeconds() % 60;
 
         StringBuilder result = new StringBuilder();
 
@@ -174,12 +181,6 @@ public class DiscordBot {
         int playerCount = match.getPlayers().size();
         return "Started at <t:" + Instant.now().getEpochSecond() + ":f> with **" + playerCount
                 + (playerCount == 1 ? " player" : " players") + "** online.";
-    }
-
-    public BufferedImage getMapImage(MapInfo map) throws IOException {
-        Path sourceDir = map.getSource().getAbsoluteDir();
-        File pngFile = new File(sourceDir.toFile(), "map.png");
-        return ImageIO.read(pngFile);
     }
 
     public long getOnlineStaffCount(Match match) {

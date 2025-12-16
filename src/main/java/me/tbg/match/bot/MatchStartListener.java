@@ -23,7 +23,7 @@ public class MatchStartListener implements Listener {
     public void onMatchStart(MatchStartEvent event) {
         Match match = event.getMatch();
         MapInfo map = match.getMap();
-        EmbedBuilder matchStartEmbed = createMatchStartEmbed(match, map);
+        EmbedBuilder matchStartEmbed = createMatchStartEmbed(match, map, bot.getConfig());
 
         bot.setEmbedThumbnail(map, matchStartEmbed, bot);
         bot.sendMatchEmbed(matchStartEmbed, match);
@@ -33,7 +33,7 @@ public class MatchStartListener implements Listener {
                 match.getPlayers().size());
     }
 
-    private EmbedBuilder createMatchStartEmbed(Match match, MapInfo map) {
+    private EmbedBuilder createMatchStartEmbed(Match match, MapInfo map, BotConfig config) {
         return new EmbedBuilder()
                 .setColor(Color.WHITE.getRGB())
                 .setTitle("Match #" + match.getId() + " has started!")
@@ -45,6 +45,8 @@ public class MatchStartListener implements Listener {
                 .addField("Pools", bot.getMapPools(match), true)
                 .addField("Objective", map.getDescription(), false)
                 .addField("Participants", String.valueOf(match.getParticipants().size()), true)
-                .addField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()), true);
+                .addField("Observers", String.valueOf(match.getDefaultParty().getPlayers().size()), true)
+                .setFooter((!config.getServerName().isEmpty() ? "Server: " + config.getServerName() + " • " : "") + "Map tags: " + map.getTags().toString());
+
     }
 }
