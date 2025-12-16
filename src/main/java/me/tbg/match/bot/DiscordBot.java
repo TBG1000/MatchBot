@@ -85,6 +85,9 @@ public class DiscordBot {
     public void sendMatchEmbed(EmbedBuilder embed, Match match) {
         if (api != null) {
             api.getPresence().setActivity(Activity.playing("Playing " + match.getMap().getName() + " on " + config.getServerName()));
+            if (config.getServerName().isEmpty()) {
+                api.getPresence().setActivity(Activity.playing("Playing " + match.getMap().getName()));
+            }
             Guild guild = api.getGuildById(config.getServerId());
             if (guild != null) {
                 TextChannel textChannel = guild.getTextChannelById(config.getMatchChannel());

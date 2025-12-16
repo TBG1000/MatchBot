@@ -7,7 +7,7 @@ This project's structure is a modified version of [Bolty](https://github.com/app
 
 MatchBot will listen to [`MatchStartEvent`](https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/api/match/event/MatchStartEvent.java) and [`MatchFinishEvent`](https://github.com/PGMDev/PGM/blob/dev/core/src/main/java/tc/oc/pgm/api/match/event/MatchFinishEvent.java) to populate a Discord [embed](https://javacord.org/wiki/basic-tutorials/embeds.html#creating-an-embed) with information about a started or finished match.
 
-MatchBot is built with [Javacord](https://javacord.org/), an awesome Java library for Discord bots.
+MatchBot is built with [JDA](https://jda.wiki/), an awesome Java library for Discord bots.
 
 This bot runs on a single Minecraft server, and is not designed with proxies, networks, or multiple servers in mind.
 
@@ -49,12 +49,18 @@ You can also find out how to get server, role or channel IDs [here](https://supp
 ## Config
     
 ```yaml
-# Discord Stuff
-enabled: true # Enable discord bot?
+# MatchBot configuration file
+# Discord settings
+enabled: true # Enable Discord bot?
 token: "" # Discord bot token
-server: "" # ID of discord server
+server: "" # ID of Discord server
+match-channel: "" # ID of channel where match embeds will be sent
 
-# ID of channel where match embeds will be sent
-match-channel: ""
+# Minecraft settings
+server-name: "" # Name of the server (useful for networks)
+
+# Image URL to display in the embed's thumbnail if a map image is not found
+# Example: https://raw.githubusercontent.com/TBG1000/MapImages/main/map_image_not_found.png
+map-image-not-found: ""
 ```
 
